@@ -40,14 +40,6 @@
 		"default_title": "Cookie-Editor",
 		"default_popup": "interface/popup/cookie-list.html"
 	},
-	"sidebar_action": {
-		"default_icon": {
-			"16": "icons/cookie-filled-small.svg",
-			"32": "icons/cookie-filled-small.svg"
-		},
-		"default_title": "Cookie-Editor",
-		"default_panel": "interface/sidepanel/cookie-list.html"
-	},
 	"devtools_page": "interface/devtools/devtool.html",
 	"options_ui": {
 		"page": "interface/options/options.html"
