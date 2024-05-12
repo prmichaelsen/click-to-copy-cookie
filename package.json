@@ -23,6 +23,7 @@
     "prettier": "^3.0.2"
   },
   "scripts": {
-    "prettier-format": "prettier --config .prettierrc **/*.js --write"
+    "prettier-format": "prettier --config .prettierrc **/*.js --write",
+    "grunt": "grunt"
   }
 }
