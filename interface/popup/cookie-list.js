@@ -1,5 +1,4 @@
 import { CookieHandlerDevtools } from '../devtools/cookieHandlerDevtools.js';
-import { Animate } from '../lib/animate.js';
 import { BrowserDetector } from '../lib/browserDetector.js';
 import { Cookie } from '../lib/cookie.js';
 import { GenericStorageHandler } from '../lib/genericStorageHandler.js';
@@ -12,10 +11,8 @@ import { CookieHandlerPopup } from './cookieHandlerPopup.js';
 (function () {
   ('use strict');
 
-  let containerCookie;
   let pageTitleContainer;
   let loadedCookies = {};
-  let disableButtons = false;
 
   const browserDetector = new BrowserDetector();
   const permissionHandler = new PermissionHandler(browserDetector);
@@ -27,12 +24,20 @@ import { CookieHandlerPopup } from './cookieHandlerPopup.js';
     : new CookieHandlerPopup(browserDetector);
 
   document.addEventListener('DOMContentLoaded', async function () {
-    containerCookie = document.getElementById('cookie-container');
     pageTitleContainer = document.getElementById('pageTitle');
 
-    pageTitleContainer.addEventListener('click', function () {
-      copyText(HeaderstringFormat.format(loadedCookies));
-      setPageTitle('Copied to clipboard!');
+    pageTitleContainer.addEventListener('click', async function () {
+      console.log('Requesting all permissions!');
+      const isPermissionGranted =
+        await permissionHandler.requestPermission('<all_urls>');
+      console.log('Permission granted? ', isPermissionGranted);
+      if (isPermissionGranted) {
+        setPageTitle('Permissions granted!');
+        showCookiesForTab(() => {
+          copyText(HeaderstringFormat.format(loadedCookies));
+          setPageTitle('Copied to clipboard!');
+        });
+      }
     });
 
     await initWindow();
@@ -42,28 +47,20 @@ import { CookieHandlerPopup } from './cookieHandlerPopup.js';
 
   /**
    * Builds the HTML for the cookies of the current tab.
+   * @param {*} callback
    * @return {Promise|null}
    */
-  async function showCookiesForTab() {
+  async function showCookiesForTab(callback) {
     if (!cookieHandler.currentTab) {
-      return;
-    }
-    if (disableButtons) {
       return;
     }
 
     console.log('showing cookies');
 
     document.myThing = 'DarkSide';
-    // const domain = getDomainFromUrl(cookieHandler.currentTab.url);
 
-    // if (!permissionHandler.canHavePermissions(cookieHandler.currentTab.url)) {
-    //   showPermissionImpossible();
-    //   return;
-    // }
     // If devtools has not been fully init yet, we will wait for a signal.
     if (!cookieHandler.currentTab) {
-      console.log(showNoCookies);
       setPageTitle('No cookies found!');
       return;
     }
@@ -71,8 +68,6 @@ import { CookieHandlerPopup } from './cookieHandlerPopup.js';
       cookieHandler.currentTab.url,
     );
     if (!hasPermissions) {
-      setPageTitle('No permissions to read cookies!');
-      console.log(showNoPermission);
       return;
     }
 
@@ -83,7 +78,7 @@ import { CookieHandlerPopup } from './cookieHandlerPopup.js';
       loadedCookies = {};
 
       if (cookies.length === 0) {
-        // showNoCookies();
+        setPageTitle('No cookies found!');
         return;
       }
 
@@ -91,109 +86,9 @@ import { CookieHandlerPopup } from './cookieHandlerPopup.js';
         const id = Cookie.hashCode(cookie);
         loadedCookies[id] = new Cookie(id, cookie, optionHandler);
       });
+
+      callback();
     });
-  }
-
-  /**
-   * Displays a message to the user to let them know that no cookies are
-   * available for the current page.
-   */
-  function showNoCookies() {
-    if (disableButtons) {
-      return;
-    }
-    const html = document
-      .importNode(document.getElementById('tmp-empty').content, true)
-      .querySelector('p');
-    if (containerCookie.firstChild) {
-      if (containerCookie.firstChild.id === 'no-cookie') {
-        return;
-      }
-      disableButtons = true;
-      Animate.transitionPage(
-        containerCookie,
-        containerCookie.firstChild,
-        html,
-        'right',
-        () => {
-          disableButtons = false;
-        },
-        optionHandler.getAnimationsEnabled(),
-      );
-    } else {
-      containerCookie.appendChild(html);
-    }
-  }
-
-  /**
-   * Displays a message to the user to let them know that the extension doesn't
-   * have permission to access the cookies for this page.
-   */
-  function showNoPermission() {
-    if (disableButtons) {
-      return;
-    }
-    const html = document
-      .importNode(document.getElementById('tmp-no-permission').content, true)
-      .querySelector('div');
-
-    document.getElementById('button-bar-add').classList.remove('active');
-    document.getElementById('button-bar-import').classList.remove('active');
-    document.getElementById('button-bar-default').classList.remove('active');
-    // Firefox can't request permissions from devTools due to
-    // https://bugzilla.mozilla.org/show_bug.cgi?id=1796933
-    if (
-      browserDetector.isFirefox() &&
-      typeof browserDetector.getApi().devtools !== 'undefined'
-    ) {
-      console.log('Firefox devtools permission display hack');
-      html.querySelector('div').textContent =
-        "Go to your settings (about:addons) or open the extension's popup to " +
-        'adjust your permissions.';
-    }
-
-    if (containerCookie.firstChild) {
-      if (containerCookie.firstChild.id === 'no-permission') {
-        return;
-      }
-      disableButtons = true;
-      Animate.transitionPage(
-        containerCookie,
-        containerCookie.firstChild,
-        html,
-        'right',
-        () => {
-          disableButtons = false;
-        },
-        optionHandler.getAnimationsEnabled(),
-      );
-    } else {
-      containerCookie.appendChild(html);
-    }
-    document.getElementById('request-permission').focus();
-    document
-      .getElementById('request-permission')
-      .addEventListener('click', async (event) => {
-        console.log('requesting permissions!');
-        const isPermissionGranted = await permissionHandler.requestPermission(
-          cookieHandler.currentTab.url,
-        );
-        console.log('permission granted? ', isPermissionGranted);
-        if (isPermissionGranted) {
-          showCookiesForTab();
-        }
-      });
-    document
-      .getElementById('request-permission-all')
-      .addEventListener('click', async (event) => {
-        console.log('requesting all permissions!');
-        const isPermissionGranted =
-          await permissionHandler.requestPermission('<all_urls>');
-        console.log('permission granted? ', isPermissionGranted);
-        if (isPermissionGranted) {
-          showCookiesForTab();
-        }
-      });
   }
 
   /**
@@ -248,18 +143,6 @@ import { CookieHandlerPopup } from './cookieHandlerPopup.js';
     const id = Cookie.hashCode(changeInfo.cookie);
 
     if (changeInfo.cause === 'overwrite') {
-      return;
-    }
-
-    if (changeInfo.removed) {
-      if (loadedCookies[id]) {
-        loadedCookies[id].removeHtml(() => {
-          if (!Object.keys(loadedCookies).length) {
-            showNoCookies();
-          }
-        });
-        delete loadedCookies[id];
-      }
       return;
     }
 

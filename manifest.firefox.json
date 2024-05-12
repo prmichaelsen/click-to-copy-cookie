@@ -1,6 +1,6 @@
 {
 	"manifest_version": 3,
-	"name": "Cookie-Editor",
+	"name": "Click-to-Copy-Cookie",
 	"version": "1.13.0",
 	"author": "Moustachauve",
 	"description": "Simple yet powerful Cookie Editor that allow you to quickly create, edit and delete cookies without leaving your tab.",
@@ -37,7 +37,7 @@
 				"size": 128
 			}
 		],
-		"default_title": "Cookie-Editor",
+		"default_title": "Click-to-Copy-Cookie",
 		"default_popup": "interface/popup/cookie-list.html"
 	},
 	"devtools_page": "interface/devtools/devtool.html",
